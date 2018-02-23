@@ -37,20 +37,6 @@ class com.fox.SprintCycle.SprintCycle {
 		sprintSignal = new Signal();
 		sprintSignal.Connect(UseMount, this);
 		var mounts = Lore.GetMountTree();
-		mountlist = new Array()
-		for (var children in mounts["m_Children"]) {
-			if (!mounts["m_Children"][children]["m_Locked"]) {
-				var id = mounts["m_Children"][children]["m_Id"];
-				if (inList(id)){
-					mountlist.push(id);
-				}
-			}
-		}
-		mountlist.sort(Array.NUMERIC);
-		RegisterHotkey(_global.Enums.InputCommand.e_InputCommand_Debug_MouseWorldPos, "com.fox.SprintCycle.SprintCycle.SendSprintSignal");
-		player = new Character(CharacterBase.GetClientCharID());
-		player.SignalBuffAdded.Connect(IsBoost, this);
-		
 		//Buffs
 		Speedboosts = new Object();
 		Speedboosts["9356708"] = true;
@@ -65,6 +51,19 @@ class com.fox.SprintCycle.SprintCycle {
 		speedyMounts["10516"] = true;
 		speedyMounts["9330"] = true;
 		speedyMounts["10437"] = true;
+		mountlist = new Array()
+		for (var children in mounts["m_Children"]) {
+			if (!mounts["m_Children"][children]["m_Locked"]) {
+				var id = mounts["m_Children"][children]["m_Id"];
+				if (inList(id)){
+					mountlist.push(id);
+				}
+			}
+		}
+		mountlist.sort(Array.NUMERIC);
+		RegisterHotkey(_global.Enums.InputCommand.e_InputCommand_Debug_MouseWorldPos, "com.fox.SprintCycle.SprintCycle.SendSprintSignal");
+		player = new Character(CharacterBase.GetClientCharID());
+		player.SignalBuffAdded.Connect(IsBoost, this);
 	}
 
 	public static function SendSprintSignal() {
@@ -82,12 +81,12 @@ class com.fox.SprintCycle.SprintCycle {
 		var sprinting:Boolean = false;
 		//is there more elegant way to check if player is sprinting?
 		for (var i in player.m_InvisibleBuffList) {
-			if (player.m_InvisibleBuffList[i].indexOf("Sprint") !=-1) {
+			if (player.m_InvisibleBuffList[i]["m_Name"].indexOf("Sprint") !=-1) {
 				sprinting = true;
 				break;
 			}
 		}
-		//If player is threatened we shouldnt turn off sprint
+		//If player is threatened we shouldn't turn off sprint
 		if (!player.IsThreatened()) {
 			//already sprinting, switch to walk and then apply mount
 			if (sprinting ) {
@@ -109,12 +108,12 @@ class com.fox.SprintCycle.SprintCycle {
 	}
 
 	public function LoadConfig(config: Archive) {
-		nextMount = Number(config.FindEntry("SprintCycle_NextMount", 0));
+		nextMount = Number(config.FindEntry("NextMount", 0));
 	}
 
 	public function SaveConfig():Archive {
 		var archive: Archive = new Archive();
-		archive.AddEntry("SprintCycle_NextMount", nextMount);
+		archive.AddEntry("NextMount", nextMount);
 		return archive
 	}
 
