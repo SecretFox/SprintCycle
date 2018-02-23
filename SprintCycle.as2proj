@@ -24,7 +24,7 @@
     <option infer="False" />
     <option useMain="True" />
     <option useMX="False" />
-    <option warnUnusedImports="False" />
+    <option warnUnusedImports="True" />
     <option traceMode="FlashConnectExtended" />
     <option traceFunction="" />
     <option libraryPrefix="" />
