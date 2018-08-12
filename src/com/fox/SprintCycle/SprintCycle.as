@@ -33,20 +33,6 @@ class com.fox.SprintCycle.SprintCycle {
 
 	public function SprintCycle(swfRoot: MovieClip) {
 		sprintSignal = new Signal();
-		var mounts = Lore.GetMountTree();
-		mountlist = new Array()
-		for (var children in mounts["m_Children"]) {
-			if (!mounts["m_Children"][children]["m_Locked"]) {
-				var id = mounts["m_Children"][children]["m_Id"];
-				if (inList(SPRINT_MOUNTS, id)){
-					mountlist.push(id);
-				}
-			}
-		}
-		mountlist.sort(Array.NUMERIC);
-		RegisterHotkey(_global.Enums.InputCommand.e_InputCommand_Debug_MouseWorldPos, "com.fox.SprintCycle.SprintCycle.SendSprintSignal");
-		m_player = new Character(CharacterBase.GetClientCharID());
-		
 	}
 	
 	private function inList(list, id) {
@@ -70,6 +56,19 @@ class com.fox.SprintCycle.SprintCycle {
 	}
 
 	public function Load() {
+		var mounts = Lore.GetMountTree();
+		mountlist = new Array()
+		for (var children in mounts["m_Children"]) {
+			if (!mounts["m_Children"][children]["m_Locked"]) {
+				var id = mounts["m_Children"][children]["m_Id"];
+				if (inList(SPRINT_MOUNTS, id)){
+					mountlist.push(id);
+				}
+			}
+		}
+		mountlist.sort(Array.NUMERIC);
+		RegisterHotkey(_global.Enums.InputCommand.e_InputCommand_Debug_MouseWorldPos, "com.fox.SprintCycle.SprintCycle.SendSprintSignal");
+		m_player = new Character(CharacterBase.GetClientCharID());
 		m_player.SignalBuffAdded.Connect(IsBoost, this);
 		sprintSignal.Connect(UseMount, this);
 
