@@ -1,3 +1,4 @@
+import com.GameInterface.Game.BuffData;
 import com.GameInterface.Game.CharacterBase;
 import com.GameInterface.Game.Character;
 import com.Utils.Signal;
@@ -8,13 +9,19 @@ import com.GameInterface.SpellBase;
 import com.GameInterface.Input;
 
 class com.fox.SprintCycle.SprintCycle {
-
-	private var speedyMounts:Object;
+	private var m_player:Character;
+	
+	static var sprintSignal:Signal;
+	private var ApplySprintTimeout;
 	private var mountlist:Array;
 	private var nextMount:Number;
-	private var player:Character;
-	private var Speedboosts:Object;
-	static var sprintSignal:Signal;
+	
+	//sprint 1-6
+	private var SPRINT_BUFFS:Array = [7481588, 7758936, 7758937, 7758938, 9114480, 9115262];
+	//speed demon, Arachnoid, Gilded, Turbojet, Flightless
+	private var SPRINT_MOUNTS:Array = [10153, 10516, 9330, 10437, 9432];
+	//nitro, web, gallop, full thrust, gallop
+	private var SPEED_BUFFS:Array = [9114716, 9356708, 9253164, 9338105, 9258408];
 
 	public static function main(swfRoot:MovieClip):Void {
 		var mod = new SprintCycle(swfRoot);
@@ -24,46 +31,48 @@ class com.fox.SprintCycle.SprintCycle {
 		swfRoot.OnModuleDeactivated = function() { return mod.SaveConfig(); };
 	}
 
-	private function inList(id) {
-		return speedyMounts[string(id)];
-	}
-	
-	public function Unload() {
-		player.SignalBuffAdded.Disconnect(IsBoost, this);
-		sprintSignal.Disconnect(UseMount, this);
-	}
-
-	public function Load() {
+	public function SprintCycle(swfRoot: MovieClip) {
 		sprintSignal = new Signal();
-		sprintSignal.Connect(UseMount, this);
 		var mounts = Lore.GetMountTree();
-		//Buffs
-		Speedboosts = new Object();
-		Speedboosts["9356708"] = true;
-		Speedboosts["9114716"] = true;
-		Speedboosts["9338105"] = true;
-		Speedboosts["9253164"] = true;
-		Speedboosts["9258408"] = true;
-		
-		//ID's for mounts that have speed boosts
-		speedyMounts = new Object();
-		speedyMounts["10153"] = true;
-		speedyMounts["10516"] = true;
-		speedyMounts["9330"] = true;
-		speedyMounts["10437"] = true;
 		mountlist = new Array()
 		for (var children in mounts["m_Children"]) {
 			if (!mounts["m_Children"][children]["m_Locked"]) {
 				var id = mounts["m_Children"][children]["m_Id"];
-				if (inList(id)){
+				if (inList(SPRINT_MOUNTS, id)){
 					mountlist.push(id);
 				}
 			}
 		}
 		mountlist.sort(Array.NUMERIC);
 		RegisterHotkey(_global.Enums.InputCommand.e_InputCommand_Debug_MouseWorldPos, "com.fox.SprintCycle.SprintCycle.SendSprintSignal");
-		player = new Character(CharacterBase.GetClientCharID());
-		player.SignalBuffAdded.Connect(IsBoost, this);
+		m_player = new Character(CharacterBase.GetClientCharID());
+		
+	}
+	
+	private function inList(list, id) {
+		for (var i in list){
+			if (list[i] == id) return true;
+		}
+		return false;
+	}
+	
+	private function IsSprinting(){
+		for (var i in m_player.m_InvisibleBuffList){
+			var buff:BuffData = m_player.m_InvisibleBuffList[i];
+			if(inList(SPRINT_BUFFS,buff.m_BuffId))return true
+		}
+		return false
+	}
+	
+	public function Unload() {
+		m_player.SignalBuffAdded.Disconnect(IsBoost, this);
+		sprintSignal.Disconnect(UseMount, this);
+	}
+
+	public function Load() {
+		m_player.SignalBuffAdded.Connect(IsBoost, this);
+		sprintSignal.Connect(UseMount, this);
+
 	}
 
 	public static function SendSprintSignal() {
@@ -71,31 +80,22 @@ class com.fox.SprintCycle.SprintCycle {
 	}
 
 	private function IsBoost(buff) {
-		if (Speedboosts[string(buff)]) {
-			nextMount += 1;
-			if (nextMount > mountlist.length - 1) nextMount = 0;
+		if (inList(SPEED_BUFFS,buff)) {
+			nextMount++;
+			if (!mountlist[nextMount]) nextMount = 0;
 		}
 	}
 
 	private function UseMount() {
-		var sprinting:Boolean = false;
-		//is there more elegant way to check if player is sprinting?
-		for (var i in player.m_InvisibleBuffList) {
-			if (player.m_InvisibleBuffList[i]["m_Name"].indexOf("Sprint") !=-1) {
-				sprinting = true;
-				break;
-			}
-		}
 		//If player is threatened we shouldn't turn off sprint
-		if (!player.IsThreatened()) {
-			//already sprinting, switch to walk and then apply mount
-			if (sprinting ) {
+		clearTimeout(ApplySprintTimeout);
+		if (!m_player.IsThreatened()) {
+			// Already sprinting, switch to walk and then apply mount
+			if (IsSprinting()) {
 				SpellBase.SummonMountFromTag();
-				setTimeout(Delegate.create(this, function() {
-					SpellBase.SummonMountFromTag(this.mountlist[this.nextMount]);
-				}), 100);
+				ApplySprintTimeout = setTimeout(Delegate.create(this, UseMount),100);
 			//not sprinting,straight to sprinting
-			} else if (!sprinting) {
+			} else {
 				SpellBase.SummonMountFromTag(mountlist[nextMount])
 			}
 		}
@@ -116,6 +116,4 @@ class com.fox.SprintCycle.SprintCycle {
 		archive.AddEntry("NextMount", nextMount);
 		return archive
 	}
-
-	public function SprintCycle(swfRoot: MovieClip) {}
 }
