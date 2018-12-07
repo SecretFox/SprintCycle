@@ -53,12 +53,15 @@ class com.fox.SprintCycle.SprintCycle {
 		sprintSignal.Connect(UseMount, this);
 		petWindow.SignalChanged.Connect(PetWindowOpened, this);
 		PetWindowOpened(petWindow);
+		Lore.SignalTagAdded.Connect(GetMounts, this);
+		
 	}
 
 	public function Unload() {
 		m_player.SignalBuffAdded.Disconnect(IsBoost, this);
 		sprintSignal.Disconnect(UseMount, this);
 		petWindow.SignalChanged.Disconnect(PetWindowOpened, this);
+		Lore.SignalTagAdded.Disconnect(GetMounts,this);
 	}
 
 	public function LoadConfig(config: Archive) {
@@ -122,9 +125,10 @@ class com.fox.SprintCycle.SprintCycle {
 
 	private function AddSprintCycle() {
 		if (_root.petinventory.m_Window.m_ButtonBar._selectedIndex == 0) {
-			if (!_root.petinventory.m_Window.m_Content.m_EquipDropdown) {
+			if (!_root.petinventory.m_Window.m_Content.initialized) {
 				setTimeout(Delegate.create(this, AddSprintCycle), 100);
 			} else {
+				_root.petinventory.m_Window.m_Content["m_FavoriteCheckBox"].addEventListener("click", this,"GetMounts");
 				if (_root.petinventory.m_Window.m_Content.m_EquipDropdown.dataProvider.length == 3) {
 					_root.petinventory.m_Window.m_Content.m_EquipDropdown.dataProvider.push("SprintCycle");
 				}
@@ -144,7 +148,7 @@ class com.fox.SprintCycle.SprintCycle {
 
 	private function PetWindowOpened(dv:DistributedValue) {
 		if (dv.GetValue()) {
-			if (!_root.petinventory.m_Window.m_ButtonBar.dataProvider) {
+			if (!_root.petinventory.m_Window.m_Content.initialized) {
 				setTimeout(Delegate.create(this, PetWindowOpened), 100, dv);
 			} else {
 				_root.petinventory.m_Window.m_ButtonBar.addEventListener("change", this, "TabSelected");
@@ -192,7 +196,6 @@ class com.fox.SprintCycle.SprintCycle {
 		}
 		
 		var mode = GetMountArchieveEntry("EquipStyle");
-		
 		switch (mode) {
 			case 0:
 				SpellBase.SummonMountFromTag(GetMountArchieveEntry("SelectedMount"));
